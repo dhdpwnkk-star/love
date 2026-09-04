@@ -1,0 +1,3145 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HeartRoute | 예주 ❤️ 준호의 로맨스</title>
+  <meta name="description" content="AI 데이트 코스 추천, 커플 D-Day 기념일 계산기, 버킷리스트와 추억 다이어리를 담은 심플 감성 데이트 웹앱">
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Pretendard:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Confetti library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Supabase JS Client SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ==========================================================================
+       SIMPLE & REFINED THEME VARIABLES (심플 감성 테마)
+       ========================================================================== */
+    :root {
+      --font-main: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font-display: 'Outfit', sans-serif;
+
+      /* Calm & Sophisticated Palette */
+      --primary: #e05368;
+      --primary-hover: #c94458;
+      --primary-soft: #fdf0f2;
+      --primary-border: #f8ccd3;
+
+      --secondary: #5c5457;
+      --neutral-bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --card-border: #eeeff2;
+      --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.07);
+
+      --text-main: #1f1f23;
+      --text-muted: #6b7280;
+      --text-light: #9ca3af;
+
+      --input-bg: #fdfdfd;
+      --input-border: #e2e4e8;
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+
+      --transition: 0.22s ease;
+    }
+
+    /* Simple Clean Night Mode */
+    [data-theme="night"] {
+      --neutral-bg: #121316;
+      --card-bg: #1a1b20;
+      --card-border: #2b2c34;
+      --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-light: #6b7280;
+
+      --primary-soft: #28181d;
+      --primary-border: #4d232c;
+
+      --input-bg: #212228;
+      --input-border: #353742;
+    }
+
+    /* ==========================================================================
+       RESET & BASE STYLES
+       ========================================================================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background: var(--neutral-bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.6;
+      transition: background var(--transition), color var(--transition);
+      position: relative;
+    }
+
+    /* Subtle Minimalist Canvas */
+    #ambientCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.45;
+    }
+
+    .app-container {
+      position: relative;
+      z-index: 1;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 5rem;
+    }
+
+    /* ==========================================================================
+       HEADER & CLEAN TOP NAV
+       ========================================================================== */
+    .app-header {
+      margin-bottom: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0.25rem;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .brand-text h1 {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      line-height: 1.2;
+    }
+
+    .brand-text span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .icon-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      outline: none;
+    }
+
+    .icon-btn:hover {
+      color: var(--text-main);
+      border-color: var(--text-light);
+      transform: translateY(-1px);
+    }
+
+    /* ==========================================================================
+       D-DAY HERO BANNER (심플 모던 스타일)
+       ========================================================================== */
+    .dday-hero-banner {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem 2rem;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    .dday-left {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .couple-avatar-wrap {
+      display: flex;
+      align-items: center;
+    }
+
+    .avatar-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      border: 2px solid var(--card-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--primary);
+    }
+
+    .avatar-heart {
+      margin: 0 -7px;
+      z-index: 2;
+      background: var(--primary);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      border: 2px solid var(--card-bg);
+    }
+
+    .dday-info h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 0.15rem;
+    }
+
+    .dday-info p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .dday-counter-box {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      background: var(--primary-soft);
+      border: 1px solid var(--primary-border);
+      padding: 0.65rem 1.3rem;
+      border-radius: var(--radius-md);
+    }
+
+    .dday-number {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1;
+    }
+
+    .dday-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .upcoming-milestones {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding: 0.6rem 0.1rem 0.3rem;
+      width: 100%;
+      border-top: 1px solid var(--card-border);
+      scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .upcoming-milestones::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .upcoming-milestones::-webkit-scrollbar-thumb {
+      background: var(--card-border);
+      border-radius: 4px;
+    }
+
+    .milestone-chip {
+      background: var(--neutral-bg);
+      border: 1px solid var(--card-border);
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+
+    /* 100일, 200일, 300일 등 완료된 기념일 색상 */
+    .milestone-chip.completed {
+      background: var(--primary-soft);
+      border-color: var(--primary-border);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .milestone-chip.completed strong {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* 오늘 당일 기념일 */
+    .milestone-chip.today {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(224, 83, 104, 0.3);
+    }
+
+    .milestone-chip.today strong {
+      color: #ffffff;
+    }
+
+    /* 다가오는 가장 가까운 다음 기념일 */
+    .milestone-chip.next {
+      background: #ffffff;
+      border: 1.5px solid var(--primary);
+      color: var(--text-main);
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(224, 83, 104, 0.12);
+    }
+
+    .milestone-chip.next strong {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    [data-theme="night"] .milestone-chip.completed {
+      background: rgba(224, 83, 104, 0.16);
+      border-color: rgba(224, 83, 104, 0.35);
+      color: #ff8598;
+    }
+
+    [data-theme="night"] .milestone-chip.completed strong {
+      color: #ff8598;
+    }
+
+    [data-theme="night"] .milestone-chip.next {
+      background: #24262f;
+      border-color: var(--primary);
+      color: #f3f4f6;
+    }
+
+    /* ==========================================================================
+       SEGMENTED NAVIGATION TABS (iOS / Modern Minimalist Style)
+       ========================================================================== */
+    .tab-nav-wrapper {
+      margin-bottom: 2rem;
+      position: sticky;
+      top: 1rem;
+      z-index: 10;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 0.35rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 0.35rem;
+      box-shadow: var(--card-shadow);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .tab-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: fit-content;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.65rem 1rem;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-main);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .tab-pane {
+      display: none;
+      animation: fadeIn 0.25s ease forwards;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    /* ==========================================================================
+       SECTION 1: AI 데이트 코스 제너레이터 (클린 레이아웃)
+       ========================================================================== */
+    .clean-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 2rem;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .filter-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.45rem;
+    }
+
+    .custom-select,
+    .custom-input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      font-family: var(--font-main);
+      font-size: 0.9rem;
+      color: var(--text-main);
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .custom-select:focus,
+    .custom-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-border);
+    }
+
+    .mood-chips-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.35rem;
+    }
+
+    .mood-chip-radio input {
+      display: none;
+    }
+
+    .mood-chip-radio span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.45rem 0.85rem;
+      background: var(--neutral-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .mood-chip-radio input:checked+span {
+      background: var(--primary-soft);
+      border-color: var(--primary-border);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 0.9rem 1.5rem;
+      font-family: var(--font-main);
+      font-size: 0.98rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Course Result Display */
+    .course-result-container {
+      margin-top: 1.5rem;
+    }
+
+    .course-header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: var(--radius-sm);
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .timeline-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .course-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--card-shadow);
+      transition: var(--transition);
+    }
+
+    .course-card:hover {
+      border-color: var(--text-light);
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .step-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.35rem;
+    }
+
+    .step-stage {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 0.3px;
+    }
+
+    .step-time {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .course-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .course-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .course-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .course-tag {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: var(--radius-sm);
+      background: var(--neutral-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .course-action-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    .course-summary-box {
+      background: var(--card-bg);
+      border: 1px solid var(--primary-border);
+      border-radius: var(--radius-md);
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 4px 16px rgba(224, 83, 104, 0.08);
+      position: relative;
+    }
+
+    .course-summary-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .course-summary-title {
+      font-size: 1.18rem;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: -0.3px;
+    }
+
+    .course-summary-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+
+    .course-budget-badge {
+      background: var(--primary-soft);
+      border: 1px solid var(--primary-border);
+      color: var(--primary);
+      padding: 0.25rem 0.65rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .course-meta-pill {
+      background: var(--neutral-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 0.25rem 0.65rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .course-summary-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.85rem;
+    }
+
+    .course-meta-text {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .course-meta-text strong {
+      color: var(--text-main);
+    }
+
+    .course-tip-box {
+      background: var(--primary-soft);
+      border-left: 3px solid var(--primary);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 0.8rem 1rem;
+      font-size: 0.84rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      line-height: 1.55;
+    }
+
+    .course-tip-box strong {
+      color: var(--primary);
+      white-space: nowrap;
+    }
+
+    .btn-secondary-action {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      font-family: var(--font-main);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-secondary-action:hover {
+      border-color: var(--text-light);
+      background: var(--neutral-bg);
+    }
+
+    /* ==========================================================================
+       SECTION 2: 버킷리스트
+       ========================================================================== */
+    .bucket-input-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .bucket-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .bucket-item {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1.15rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .bucket-item:hover {
+      border-color: var(--text-light);
+    }
+
+    .bucket-item.completed {
+      background: var(--neutral-bg);
+    }
+
+    .bucket-item.completed .bucket-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .bucket-left {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex: 1;
+    }
+
+    .heart-checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      border: 1.5px solid var(--text-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 0.7rem;
+      flex-shrink: 0;
+      transition: var(--transition);
+    }
+
+    .bucket-item.completed .heart-checkbox {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .bucket-text {
+      font-size: 0.92rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .btn-delete-bucket {
+      background: none;
+      border: none;
+      color: var(--text-light);
+      cursor: pointer;
+      padding: 0.3rem;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .btn-delete-bucket:hover {
+      color: #ef4444;
+    }
+
+    /* ==========================================================================
+       SECTION 3: 결정 장애 해결 룰렛 (심플 파스텔)
+       ========================================================================== */
+    .roulette-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .roulette-tabs {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .roulette-preset-btn {
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .roulette-preset-btn.active {
+      background: var(--primary-soft);
+      border-color: var(--primary-border);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .canvas-container {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      margin: 0.5rem 0 1.5rem;
+    }
+
+    #rouletteCanvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .roulette-pointer {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 20px solid var(--primary);
+      z-index: 5;
+    }
+
+    .roulette-center-pin {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 44px;
+      height: 44px;
+      background: #ffffff;
+      border: 2px solid var(--card-border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-size: 1.1rem;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .roulette-result-display {
+      margin-top: 1.25rem;
+      text-align: center;
+      min-height: 44px;
+    }
+
+    .result-pill {
+      display: inline-block;
+      padding: 0.5rem 1.25rem;
+      background: var(--primary-soft);
+      border: 1px solid var(--primary-border);
+      color: var(--primary);
+      border-radius: var(--radius-sm);
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    /* ==========================================================================
+       SECTION 4: 3D 대화 카드 (클린 플랫 카드)
+       ========================================================================== */
+    .cards-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .card-3d-stage {
+      perspective: 1000px;
+      width: 100%;
+      max-width: 460px;
+      height: 260px;
+      margin: 1.25rem 0;
+      cursor: pointer;
+    }
+
+    .card-3d-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+      border-radius: var(--radius-lg);
+    }
+
+    .card-3d-inner.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--card-shadow);
+      border: 1px solid var(--card-border);
+    }
+
+    .card-front {
+      background: var(--card-bg);
+      color: var(--text-main);
+    }
+
+    .card-back {
+      background: var(--card-bg);
+      color: var(--text-main);
+      transform: rotateY(180deg);
+    }
+
+    .card-front h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .card-front p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .card-category-tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: var(--radius-sm);
+      background: var(--primary-soft);
+      color: var(--primary);
+      margin-bottom: 0.85rem;
+    }
+
+    .card-question {
+      font-size: 1.15rem;
+      font-weight: 600;
+      line-height: 1.5;
+      word-break: keep-all;
+    }
+
+    .card-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.85rem;
+    }
+
+    /* ==========================================================================
+       SECTION 5: 데이트 추억 다이어리
+       ========================================================================== */
+    .diary-form {
+      background: var(--neutral-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .diary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .polaroid-card {
+      background: var(--card-bg);
+      padding: 0.85rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--card-shadow);
+      transition: var(--transition);
+    }
+
+    .polaroid-card:hover {
+      box-shadow: var(--card-shadow-hover);
+      border-color: var(--text-light);
+    }
+
+    .polaroid-img-wrap {
+      width: 100%;
+      height: 160px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--neutral-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .polaroid-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .polaroid-content h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+
+    .polaroid-date {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .polaroid-stars {
+      color: #f59e0b;
+      font-size: 0.8rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .polaroid-memo {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* ==========================================================================
+       MODAL STYLES
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: var(--transition);
+    }
+
+    .modal-backdrop.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-window {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15);
+      transition: var(--transition);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Delicate Click Heart */
+    .click-heart {
+      position: fixed;
+      pointer-events: none;
+      color: var(--primary);
+      font-size: 1.1rem;
+      animation: floatHeart 0.7s ease-out forwards;
+      z-index: 9999;
+    }
+
+    @keyframes floatHeart {
+      0% {
+        opacity: 0.9;
+        transform: translate(-50%, -50%) scale(0.6);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -120%) scale(1.1);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .app-container {
+        padding: 1rem 0.75rem 4rem;
+      }
+
+      .clean-box {
+        padding: 1.25rem;
+      }
+
+      .dday-hero-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1.25rem;
+      }
+
+      .dday-counter-box {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .tab-btn span {
+        display: none;
+      }
+
+      .tab-btn i {
+        margin: 0;
+      }
+    }
+
+    /* ==========================================================================
+       AUTH & PAIRING UI STYLES
+       ========================================================================== */
+    .auth-wrapper {
+      position: fixed;
+      inset: 0;
+      background: rgba(248, 249, 250, 0.96);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 2000;
+      overflow-y: auto;
+    }
+
+    [data-theme="night"] .auth-wrapper {
+      background: rgba(18, 19, 22, 0.96);
+    }
+
+    .auth-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      max-width: 440px;
+      padding: 2.2rem 2rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .auth-brand {
+      text-align: center;
+      margin-bottom: 1.8rem;
+    }
+
+    .auth-logo-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--primary);
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      margin-bottom: 0.75rem;
+      box-shadow: 0 4px 12px rgba(224, 83, 104, 0.25);
+    }
+
+    .auth-brand h2 {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 0.25rem;
+    }
+
+    .auth-brand p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .auth-tabs {
+      display: flex;
+      background: var(--neutral-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 0.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .auth-tab-btn {
+      flex: 1;
+      padding: 0.6rem;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-main);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .auth-tab-btn.active {
+      background: var(--card-bg);
+      color: var(--primary);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .auth-field label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .auth-error-msg {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 0.65rem 0.9rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.84rem;
+      display: none;
+    }
+
+    [data-theme="night"] .auth-error-msg {
+      background: #36191c;
+      border-color: #632228;
+      color: #fca5a5;
+    }
+
+    .demo-login-wrap {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--card-border);
+      text-align: center;
+    }
+
+    .demo-login-wrap p {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .demo-btn-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .demo-btn {
+      flex: 1;
+      padding: 0.55rem;
+      background: var(--neutral-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .demo-btn:hover {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: var(--primary-border);
+    }
+
+    .pairing-card {
+      text-align: center;
+    }
+
+    .pairing-icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .pairing-avatar {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      border: 2px solid var(--primary-border);
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pairing-heart-link {
+      color: var(--primary);
+      animation: pulseLink 1.5s infinite ease-in-out;
+    }
+
+    @keyframes pulseLink {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.8;
+      }
+
+      50% {
+        transform: scale(1.2);
+        opacity: 1;
+      }
+    }
+
+    .my-code-box {
+      background: var(--neutral-bg);
+      border: 1px dashed var(--primary-border);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin: 1.25rem 0;
+    }
+
+    .my-code-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .my-code-value {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: 2px;
+      user-select: all;
+    }
+
+    .btn-copy-code {
+      margin-top: 0.5rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--primary);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.2rem 0.5rem;
+    }
+
+    .btn-copy-code:hover {
+      text-decoration: underline;
+    }
+
+    .connect-divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--text-light);
+      font-size: 0.78rem;
+      margin: 1.5rem 0;
+    }
+
+    .connect-divider::before,
+    .connect-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--card-border);
+    }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border: 1px solid var(--primary-border);
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Love Letters */
+    .letter-form {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .letter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .letter-item {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-left: 3px solid var(--primary);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.25rem;
+    }
+
+    .letter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .letter-author {
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .letter-body {
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Subtle Ambient Particle Canvas -->
+  <canvas id="ambientCanvas"></canvas>
+
+  <!-- ==========================================================================
+       1. AUTH MODAL (LOGIN & SIGN UP)
+       ========================================================================== -->
+  <!-- ==========================================================================
+       1. AUTH MODAL (LOGIN & SIGN UP)
+       ========================================================================== -->
+  <div id="authModal" class="auth-wrapper" style="display: flex;">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-logo-icon">
+          <i data-lucide="heart" class="w-6 h-6 fill-current"></i>
+        </div>
+        <h2>HeartRoute</h2>
+        <p>둘만의 설레는 이야기와 추억을 시작하세요</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" data-tab="login">로그인</button>
+        <button class="auth-tab-btn" data-tab="register">회원가입</button>
+      </div>
+
+      <div id="authError" class="auth-error-msg"></div>
+
+      <!-- Login Form -->
+      <form id="loginForm" class="auth-form">
+        <div class="auth-field">
+          <label for="loginEmail">이메일 또는 이름</label>
+          <input type="text" id="loginEmail" class="custom-input" placeholder="예: yeju@heart.com 또는 예주" required>
+        </div>
+        <div class="auth-field">
+          <label for="loginPassword">비밀번호</label>
+          <input type="password" id="loginPassword" class="custom-input" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top: 0.5rem;">
+          로그인하고 입장하기 💕
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="registerForm" class="auth-form" style="display: none;">
+        <div class="auth-field">
+          <label for="regNickname">나의 이름 또는 애칭</label>
+          <input type="text" id="regNickname" class="custom-input" placeholder="예: 예주" required>
+        </div>
+        <div class="auth-field">
+          <label for="regEmail">이메일 계정</label>
+          <input type="email" id="regEmail" class="custom-input" placeholder="example@heart.com" required>
+        </div>
+        <div class="auth-field">
+          <label for="regPassword">비밀번호</label>
+          <input type="password" id="regPassword" class="custom-input" placeholder="비밀번호 설정" required>
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top: 0.5rem;">
+          회원가입 완료 & 입장 💕
+        </button>
+      </form>
+
+      <!-- 1-Click Instant Demo Login -->
+      <div class="demo-login-wrap">
+        <p>체험용 1초 원클릭 로그인</p>
+        <div class="demo-btn-group">
+          <button id="btnDemoYeju" class="demo-btn">🌸 예주로 바로 입장</button>
+          <button id="btnDemoJunho" class="demo-btn">🌿 준호로 바로 입장</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.1rem; text-align: center;">
+        <button type="button" id="btnSkipAuth"
+          style="background: none; border: none; color: var(--text-muted); font-size: 0.82rem; cursor: pointer; text-decoration: underline; font-weight: 600;">
+          ✨ 로그인 없이 페이지 바로 둘러보기 →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       2. PAIRING MODAL (COUPLE CONNECT ROOM)
+       ========================================================================== -->
+  <div id="pairingModal" class="auth-wrapper" style="display: none;">
+    <div class="auth-card pairing-card" style="position: relative;">
+      <button id="btnClosePairing"
+        style="position: absolute; top: 1.1rem; right: 1.1rem; background: none; border: none; font-size: 1.3rem; color: var(--text-muted); cursor: pointer; padding: 0.25rem;"
+        title="닫기">✕</button>
+
+      <div class="pairing-icon-wrap">
+        <div class="pairing-avatar" id="myNicknameLabel">나</div>
+        <div class="pairing-heart-link">
+          <i data-lucide="heart-handshake" class="w-8 h-8 text-primary"></i>
+        </div>
+        <div class="pairing-avatar">연인</div>
+      </div>
+
+      <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 0.4rem;">연인과 연결하기</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">
+        서로의 초대 코드를 공유하여 둘만의 프라이빗 커플 공간을 완성하세요.
+      </p>
+
+      <div class="my-code-box">
+        <div class="my-code-label">나의 커플 초대 코드</div>
+        <div class="my-code-value" id="myInviteCodeDisplay">HR-1628</div>
+        <button id="btnCopyMyCode" class="btn-copy-code">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i> 초대 코드 복사하기
+        </button>
+      </div>
+
+      <div class="connect-divider">또는 연인의 코드 입력</div>
+
+      <div id="pairingError" class="auth-error-msg" style="margin-bottom: 1rem;"></div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <input type="text" id="partnerCodeInput" class="custom-input" placeholder="상대방 초대 코드 입력 (예: 9543 또는 HR-9543)"
+          style="text-align: center; font-weight: 700; letter-spacing: 1px;">
+        <button id="btnConnectPartner" class="btn-primary">
+          <i data-lucide="sparkles" class="w-4 h-4"></i> 연인과 커플 연결하기
+        </button>
+
+        <div style="margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px dashed var(--card-border);">
+          <div style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 0.5rem;">체험용 원클릭 빠른 연결:</div>
+          <div style="display: flex; gap: 0.4rem;">
+            <button type="button" class="btn-secondary-action" id="btnQuickConnectJunho"
+              style="flex: 1; font-size: 0.8rem; padding: 0.45rem;">🌿 준호 (HR-9543)</button>
+            <button type="button" class="btn-secondary-action" id="btnQuickConnectYeju"
+              style="flex: 1; font-size: 0.8rem; padding: 0.45rem;">🌸 예주 (HR-1628)</button>
+          </div>
+        </div>
+
+        <button type="button" id="btnSkipPairing" class="btn-secondary-action" style="margin-top: 0.5rem; width: 100%;">
+          나중에 연결하고 페이지 바로 보기 →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       3. CONNECTED COUPLE MAIN DASHBOARD
+       ========================================================================== -->
+  <div id="mainAppContainer" class="app-container" style="display: none;">
+
+    <!-- Header Navigation -->
+    <header class="app-header">
+      <nav class="top-nav">
+        <a href="#" class="brand-logo">
+          <div class="brand-icon">
+            <i data-lucide="heart" class="w-4 h-4 fill-current"></i>
+          </div>
+          <div class="brand-text">
+            <h1>HeartRoute</h1>
+            <span>둘만의 커플 플랫폼</span>
+          </div>
+        </a>
+
+        <div class="nav-controls">
+          <div class="user-badge" id="userBadgeWrap">
+            <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+            <span id="currentUserName">사용자</span>님
+          </div>
+          <button id="btnOpenPairing" class="icon-btn" title="커플 초대 코드 확인 및 연인 연결"
+            style="width: auto; padding: 0 0.75rem; gap: 0.35rem; font-size: 0.8rem; font-weight: 600; color: var(--primary);">
+            <i data-lucide="link" class="w-3.5 h-3.5"></i> 초대 코드
+          </button>
+          <button id="btnSoundToggle" class="icon-btn" title="사운드 효과">
+            <i data-lucide="volume-2" class="w-4 h-4"></i>
+          </button>
+          <button id="btnThemeToggle" class="icon-btn" title="다크/라이트 모드">
+            <i data-lucide="moon" class="w-4 h-4"></i>
+          </button>
+          <button id="btnOpenSetting" class="icon-btn" title="기념일 및 커플 설정">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+          </button>
+          <button id="btnLogout" class="icon-btn" title="로그아웃">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </nav>
+
+      <!-- D-Day Hero Banner -->
+      <section class="dday-hero-banner" id="ddayHero">
+        <div class="dday-left">
+          <div class="couple-avatar-wrap">
+            <div class="avatar-circle" id="person1Name">예주</div>
+            <div class="avatar-heart">
+              <i data-lucide="heart" class="w-3 h-3 fill-current"></i>
+            </div>
+            <div class="avatar-circle" id="person2Name">준호</div>
+          </div>
+          <div class="dday-info">
+            <h2><span id="coupleTitle">예주 ❤️ 준호</span>의 로맨스</h2>
+            <p id="startDateLabel">2025년 1월 16일부터 사랑하는 중</p>
+          </div>
+        </div>
+
+        <div class="dday-counter-box">
+          <span class="dday-number" id="ddayCount">D+0</span>
+          <span class="dday-label">일째 사랑 중</span>
+        </div>
+
+        <!-- 기념일 칩 -->
+        <div class="upcoming-milestones" id="milestonesList">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <div class="tab-nav-wrapper">
+      <nav class="tab-bar">
+        <button class="tab-btn active" data-tab="tab-generator">
+          <i data-lucide="compass" class="w-4 h-4"></i>
+          <span>AI 코스 추천</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-bucket">
+          <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+          <span>버킷리스트</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-roulette">
+          <i data-lucide="pie-chart" class="w-4 h-4"></i>
+          <span>결정 룰렛</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-cards">
+          <i data-lucide="messages-square" class="w-4 h-4"></i>
+          <span>대화 카드</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-diary">
+          <i data-lucide="camera" class="w-4 h-4"></i>
+          <span>추억 다이어리</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-letters">
+          <i data-lucide="mail-heart" class="w-4 h-4"></i>
+          <span>비밀 쪽지함</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- TAB 1: AI 코스 추천 -->
+    <main>
+      <section id="tab-generator" class="tab-pane active">
+        <div class="clean-box">
+          <h2 class="section-title">
+            <i data-lucide="sparkles" class="w-5 h-5 text-primary"></i>
+            둘만을 위한 데이트 코스 설계
+          </h2>
+          <p class="section-desc">지역과 오늘의 무드, 예산에 맞는 센스 있는 코스를 추천해 드려요.</p>
+
+          <div class="filter-grid">
+            <div class="filter-group">
+              <label for="selectLocation">데이트 지역</label>
+              <select id="selectLocation" class="custom-select">
+                <option value="성수">성수 / 서울숲 (트렌디 핫플 & 감성 공방)</option>
+                <option value="연남홍대">연남 / 홍대 (힙한 골목길 & 디저트)</option>
+                <option value="한남이태원">한남 / 이태원 (이국적인 다이닝 & 갤러리)</option>
+                <option value="익선삼청">익선동 / 삼청동 (고즈넉한 한옥 & 산책)</option>
+                <option value="잠실송리단길">잠실 / 송리단길 (호수 산책 & 루프탑)</option>
+                <option value="강남신사">강남 / 신사 가로수길 (세련된 와인바 & 쇼핑)</option>
+                <option value="근교드라이브">근교 드라이브 (남양주/가평 리버뷰)</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="selectBudget">예산 규모</label>
+              <select id="selectBudget" class="custom-select">
+                <option value="all">전체 예산 (자유롭게 추천)</option>
+                <option value="budget">가성비 데이트 (1인 2~3만원 대)</option>
+                <option value="standard" selected>실속 & 센스 데이트 (1인 4~6만원 대)</option>
+                <option value="luxury">특별한 날 럭셔리 (1인 8만원 이상)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="filter-group" style="margin-bottom: 1.5rem;">
+            <label>오늘의 데이트 무드</label>
+            <div class="mood-chips-wrap">
+              <label class="mood-chip-radio">
+                <input type="radio" name="mood" value="romantic" checked>
+                <span>🍷 로맨틱 디너 & 와인</span>
+              </label>
+              <label class="mood-chip-radio">
+                <input type="radio" name="mood" value="cafe">
+                <span>☕ 감성 카페 & 디저트</span>
+              </label>
+              <label class="mood-chip-radio">
+                <input type="radio" name="mood" value="activity">
+                <span>🎨 이색 공방 & 전시 체험</span>
+              </label>
+              <label class="mood-chip-radio">
+                <input type="radio" name="mood" value="healing">
+                <span>🌿 힐링 산책 & 야경</span>
+              </label>
+              <label class="mood-chip-radio">
+                <input type="radio" name="mood" value="rainy">
+                <span>☔ 비 오는 날 아늑한 실내</span>
+              </label>
+            </div>
+          </div>
+
+          <button id="btnGenerateCourse" class="btn-primary">
+            <i data-lucide="wand-2" class="w-4 h-4"></i>
+            맞춤 데이트 코스 추천받기
+          </button>
+        </div>
+
+        <div class="course-result-container" id="courseResultWrap"></div>
+      </section>
+
+      <!-- TAB 2: 버킷리스트 -->
+      <section id="tab-bucket" class="tab-pane">
+        <div class="clean-box">
+          <h2 class="section-title">
+            <i data-lucide="heart" class="w-5 h-5 text-primary"></i>
+            우리 둘만의 데이트 버킷리스트
+          </h2>
+          <p class="section-desc">함께 해보고 싶은 일들을 적고 하나씩 체크해보세요.</p>
+
+          <form id="bucketForm" class="bucket-input-row" onsubmit="return false;">
+            <input type="text" id="bucketInput" class="custom-input" placeholder="새로운 버킷리스트 입력 (예: 밤바다 보며 불꽃놀이 하기)"
+              required>
+            <button type="submit" class="btn-primary" style="width: auto; padding: 0.75rem 1.4rem;">추가</button>
+          </form>
+
+          <div class="bucket-list" id="bucketListContainer"></div>
+        </div>
+      </section>
+
+      <!-- TAB 3: 결정 룰렛 -->
+      <section id="tab-roulette" class="tab-pane">
+        <div class="clean-box roulette-wrapper">
+          <h2 class="section-title">
+            <i data-lucide="help-circle" class="w-5 h-5 text-primary"></i>
+            오늘 뭐 먹지? 뭐 하지? 결정 룰렛
+          </h2>
+          <p class="section-desc">선택하기 어려울 때 가볍게 돌려보세요.</p>
+
+          <div class="roulette-tabs">
+            <button class="roulette-preset-btn active" data-preset="food">🍽️ 오늘의 메뉴</button>
+            <button class="roulette-preset-btn" data-preset="activity">🎳 오늘의 놀거리</button>
+          </div>
+
+          <div class="canvas-container">
+            <div class="roulette-pointer"></div>
+            <canvas id="rouletteCanvas" width="600" height="600"></canvas>
+            <div class="roulette-center-pin">♥</div>
+          </div>
+
+          <button id="btnSpinRoulette" class="btn-primary" style="width: auto; padding: 0.8rem 2.2rem;">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            룰렛 돌리기
+          </button>
+
+          <div class="roulette-result-display" id="rouletteResult"></div>
+        </div>
+      </section>
+
+      <!-- TAB 4: 대화 카드 -->
+      <section id="tab-cards" class="tab-pane">
+        <div class="clean-box cards-container">
+          <h2 class="section-title">
+            <i data-lucide="messages-square" class="w-5 h-5 text-primary"></i>
+            우리 둘의 속마음 대화 카드
+          </h2>
+          <p class="section-desc">카드를 누르면 질문이 나타나요. 서로의 이야기에 귀 기울여보세요.</p>
+
+          <div class="card-3d-stage" id="cardStage">
+            <div class="card-3d-inner" id="cardInner">
+              <div class="card-face card-front">
+                <i data-lucide="sparkles" class="w-6 h-6 text-primary" style="margin-bottom: 0.5rem;"></i>
+                <h3>카드를 터치하세요</h3>
+                <p>오늘의 질문을 확인해보세요</p>
+              </div>
+              <div class="card-face card-back">
+                <span class="card-category-tag" id="cardCategory">설렘 & 추억</span>
+                <p class="card-question" id="cardQuestion">우리가 처음 만났던 날, 나에 대한 너의 첫인상은 어땠어?</p>
+                <span class="card-hint">솔직하고 다정한 목소리로 이야기해 주세요 💕</span>
+              </div>
+            </div>
+          </div>
+
+          <button id="btnNextCard" class="btn-primary" style="width: auto; padding: 0.75rem 1.6rem;">
+            <i data-lucide="shuffle" class="w-4 h-4"></i>
+            다른 질문 뽑기
+          </button>
+        </div>
+      </section>
+
+      <!-- TAB 5: 추억 다이어리 -->
+      <section id="tab-diary" class="tab-pane">
+        <div class="clean-box">
+          <h2 class="section-title">
+            <i data-lucide="camera" class="w-5 h-5 text-primary"></i>
+            우리의 데이트 사진 & 추억 일기
+          </h2>
+          <p class="section-desc">함께한 날들의 소중한 기록을 간직하세요.</p>
+
+          <form id="diaryForm" class="diary-form" onsubmit="return false;">
+            <div class="filter-grid" style="margin-bottom: 0.85rem;">
+              <div>
+                <label class="block text-xs font-semibold text-muted mb-1">데이트 날짜</label>
+                <input type="date" id="diaryDate" class="custom-input" required>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-muted mb-1">장소 / 코스명</label>
+                <input type="text" id="diaryPlace" class="custom-input" placeholder="예: 성수동 서울숲 산책" required>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-muted mb-1">만족도 별점</label>
+                <select id="diaryRating" class="custom-select">
+                  <option value="5">⭐⭐⭐⭐⭐ (최고였어!)</option>
+                  <option value="4">⭐⭐⭐⭐ (매우 만족)</option>
+                  <option value="3">⭐⭐⭐ (좋았어)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-muted mb-1">사진 첨부 (선택)</label>
+                <input type="file" id="diaryImageInput" accept="image/*" class="custom-input">
+              </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <label class="block text-xs font-semibold text-muted mb-1">한 줄 메모</label>
+              <textarea id="diaryMemo" rows="2" class="custom-input" placeholder="함께 걸어서 더 따뜻했던 날..."
+                required></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: auto; padding: 0.7rem 1.4rem;">
+              기록 저장하기
+            </button>
+          </form>
+
+          <div class="diary-grid" id="diaryListContainer"></div>
+        </div>
+      </section>
+
+      <!-- TAB 6: 비밀 쪽지함 (Love Letters) -->
+      <section id="tab-letters" class="tab-pane">
+        <div class="clean-box">
+          <h2 class="section-title">
+            <i data-lucide="mail-heart" class="w-5 h-5 text-primary"></i>
+            둘만의 비밀 쪽지함 (Love Letters)
+          </h2>
+          <p class="section-desc">연인에게 힘이 되는 응원과 사랑의 한마디를 남겨보세요.</p>
+
+          <form id="letterForm" class="letter-form" onsubmit="return false;">
+            <input type="text" id="letterInput" class="custom-input"
+              placeholder="연인에게 보내는 달콤한 한 줄 쪽지 (예: 오늘 하루도 고생 많았어 사랑해 ♥)" required>
+            <button type="submit" class="btn-primary" style="width: auto; padding: 0.75rem 1.5rem;">쪽지 전송</button>
+          </form>
+
+          <div class="letter-list" id="letterListContainer" style="margin-top: 1.5rem;"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: 커플 설정 -->
+  <div class="modal-backdrop" id="settingModal">
+    <div class="modal-window">
+      <h3
+        style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1.25rem; display:flex; align-items:center; gap:0.4rem;">
+        <i data-lucide="heart" class="text-primary w-4 h-4 fill-current"></i> 커플 정보 및 기념일 설정
+      </h3>
+
+      <div style="display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.25rem;">
+        <div>
+          <label
+            style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">첫
+            번째 이름 / 애칭</label>
+          <input type="text" id="inputName1" class="custom-input" value="예주">
+        </div>
+        <div>
+          <label
+            style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">두
+            번째 이름 / 애칭</label>
+          <input type="text" id="inputName2" class="custom-input" value="준호">
+        </div>
+        <div>
+          <label
+            style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">처음
+            사귄 날짜</label>
+          <input type="date" id="inputStartDate" class="custom-input" value="2025-01-16">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <button id="btnCancelSetting" class="btn-secondary-action" style="flex:1;">취소</button>
+        <button id="btnSaveSetting" class="btn-primary" style="flex:1; padding: 0.75rem;">저장하기</button>
+      </div>
+
+      <!-- Supabase Cloud DB Connection Section -->
+      <div
+        style="margin-top: 1.25rem; padding: 1rem; border-radius: var(--radius-md); background: var(--neutral-bg); border: 1px solid var(--card-border);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+          <div style="font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
+            <i data-lucide="database" class="w-4 h-4 text-primary"></i>
+            <span>Supabase 클라우드 DB 연동</span>
+          </div>
+          <span id="supabaseStatusBadge"
+            style="font-size: 0.72rem; padding: 0.2rem 0.6rem; border-radius: var(--radius-full); font-weight: 600; background: #fee2e2; color: #dc2626;">
+            오프라인 모드
+          </span>
+        </div>
+        <p style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          Supabase 프로젝트의 URL과 Anon Key를 입력하면 클라우드에 커플별로 분리 저장됩니다.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <input type="text" id="inputSupabaseUrl" class="custom-input"
+            placeholder="Supabase Project URL (https://xyz.supabase.co)"
+            style="font-size: 0.8rem; padding: 0.5rem 0.75rem;">
+          <input type="password" id="inputSupabaseKey" class="custom-input"
+            placeholder="Supabase Anon Key (eyJhbGci...)" style="font-size: 0.8rem; padding: 0.5rem 0.75rem;">
+          <div style="display: flex; gap: 0.4rem; margin-top: 0.25rem;">
+            <button type="button" id="btnSaveSupabase" class="btn-primary"
+              style="flex: 1; font-size: 0.78rem; padding: 0.45rem;">
+              연결 저장 & 동기화
+            </button>
+            <button type="button" id="btnDisconnectSupabase" class="btn-secondary-action"
+              style="flex: 1; font-size: 0.78rem; padding: 0.45rem;">
+              연결 해제 (오프라인 복귀)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--card-border);">
+        <button id="btnDisconnectCouple" class="btn-secondary-action"
+          style="width: 100%; color: #dc2626; border-color: #fecaca; font-size: 0.82rem; padding: 0.55rem;">
+          <i data-lucide="unlink" class="w-3.5 h-3.5"></i> 커플 연결 해제하기 (초대 코드 화면으로 이동)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="coursesData.js"></script>
+  <script src="api.js"></script>
+  <script>
+    /* 1. DATABASE & AI COURSE ENGINE */
+    // Provided by coursesData.js (105+ unique curated courses across 7 regions, 5 moods, 3 budget tiers)
+
+
+    const ROULETTE_PRESETS = {
+      food: ['파스타 & 뇨끼', '오마카세/스시', '육즙 삼겹살', '화덕피자 & 맥주', '베트남 쌀국수', '매콤 떡볶이', '수제버거', '정갈한 솥밥'],
+      activity: ['프라이빗 영화관', '공방 원데이클래스', '볼링 배틀', '보드게임 카페', '전시회 관람', '도심 속 피크닉', '방탈출 카페', '서점 데이트']
+    };
+
+    const COUPLE_QUESTIONS = [
+      { cat: '설렘 & 첫인상', q: '우리가 처음 만났던 날, 나에 대한 너의 첫인상은 어땠어?' },
+      { cat: '설렘 & 심쿵', q: '지금까지 나를 만나면서 가장 심장이 쿵 하고 설렜던 순간은 언제야?' },
+      { cat: '서로의 취향', q: '내가 해줬던 말 중에 네 마음에 가장 오래 남았던 따뜻한 한마디는?' },
+      { cat: '상상 & 미래', q: '만약 우리 둘이 1주일 동안 여행을 간다면 가장 가보고 싶은 곳은?' },
+      { cat: '가치관 밸런스', q: '일주일 동안 매일 짧게 만나기 vs 주말 하루 종일 데이트하기' },
+      { cat: '감사 & 사랑', q: '나의 가장 큰 장점이자 너를 미소 짓게 만드는 매력은 뭐라고 생각해?' },
+      { cat: '데이트 버킷', q: '이번 계절이 끝나기 전에 나와 꼭 함께 가보고 싶은 곳 한 군데는?' },
+      { cat: '추억 소환', q: '우리 둘이 같이 먹었던 음식 중에 가장 맛있었던 1등 메뉴는?' }
+    ];
+
+    const DEFAULT_BUCKET_ITEMS = [
+      { id: 1, text: '노을 지는 한강에서 돗자리 펴고 피크닉 하기', completed: true },
+      { id: 2, text: '서로를 위한 커플링 직접 공방에서 만들어보기', completed: true },
+      { id: 3, text: '비 오는 날 아늑한 만화카페에서 라면 먹기', completed: false },
+      { id: 4, text: '자동차 극장에서 간식 잔뜩 먹으며 심야 영화 보기', completed: false },
+      { id: 5, text: '놀이공원에서 머리띠 쓰고 종일 놀기', completed: false },
+      { id: 6, text: '봄날 벚꽃 만개한 길에서 필름 카메라로 사진 찍기', completed: false },
+      { id: 7, text: '별빛 쏟아지는 밤 글램핑 불멍 마시멜로 굽기', completed: false }
+    ];
+
+    /* 2. APP STATE */
+    const State = {
+      user: null,
+      couple: null,
+      partner: null,
+      buckets: [],
+      diaries: [],
+      letters: [],
+      theme: localStorage.getItem('hr_theme') || 'light',
+      soundEnabled: localStorage.getItem('hr_sound') === 'true',
+      activeRoulettePreset: 'food',
+      isSpinning: false,
+      currentQuestionIdx: 0
+    };
+
+    /* 3. SUBTLE SYNTHESIZER SOUNDS */
+    let audioCtx = null;
+    function playSound(type = 'click') {
+      if (!State.soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'click') {
+          osc.frequency.setValueAtTime(500, now);
+          osc.frequency.exponentialRampToValueAtTime(700, now + 0.05);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'win') {
+          osc.frequency.setValueAtTime(587.33, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        }
+      } catch (e) { }
+    }
+
+    /* 4. D-DAY DISPLAY & 100-DAY MILESTONES */
+    function updateDDayDisplay() {
+      if (!State.couple) return;
+
+      const startDateStr = State.couple.start_date || '2025-01-16';
+      const start = new Date(startDateStr);
+      const today = new Date();
+      start.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+
+      const diffTime = today - start;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+      const myNick = State.user ? State.user.nickname : '예주';
+      const partnerNick = State.partner ? State.partner.nickname : '준호';
+
+      document.getElementById('person1Name').textContent = myNick.slice(-2);
+      document.getElementById('person2Name').textContent = partnerNick.slice(-2);
+      document.getElementById('coupleTitle').textContent = State.couple.title || `${myNick} ❤️ ${partnerNick}의 로맨스`;
+
+      const year = start.getFullYear();
+      const month = start.getMonth() + 1;
+      const day = start.getDate();
+      document.getElementById('startDateLabel').textContent = `${year}년 ${month}월 ${day}일부터 사랑하는 중`;
+      document.getElementById('ddayCount').textContent = `D+${diffDays > 0 ? diffDays : 0}`;
+
+      // 100일 단위 기념일 및 N주년 자동 생성
+      const milestones = [];
+      const currentDays = diffDays > 0 ? diffDays : 0;
+      const maxDays = Math.max(1200, Math.ceil((currentDays + 600) / 100) * 100);
+
+      for (let d = 100; d <= maxDays; d += 100) {
+        milestones.push({ label: `${d}일`, days: d });
+      }
+      for (let y = 1; y * 365 <= maxDays; y++) {
+        const yDays = y * 365;
+        milestones.push({ label: `${y}주년 (${yDays}일)`, days: yDays });
+      }
+      milestones.sort((a, b) => a.days - b.days);
+
+      const listWrap = document.getElementById('milestonesList');
+      listWrap.innerHTML = '';
+
+      let hasNextMarked = false;
+
+      milestones.forEach(m => {
+        const leftDays = m.days - diffDays;
+        const chip = document.createElement('div');
+
+        let statusText = '';
+        if (leftDays < 0) {
+          chip.className = 'milestone-chip completed';
+          statusText = '완료 ♥';
+        } else if (leftDays === 0) {
+          chip.className = 'milestone-chip today';
+          statusText = '🎉 오늘!';
+        } else {
+          if (!hasNextMarked) {
+            chip.className = 'milestone-chip next';
+            hasNextMarked = true;
+          } else {
+            chip.className = 'milestone-chip';
+          }
+          statusText = `D-${leftDays}`;
+        }
+
+        chip.innerHTML = `<span>${m.label}</span> <strong>${statusText}</strong>`;
+        listWrap.appendChild(chip);
+      });
+    }
+
+    /* 5. SUBTLE AMBIENT CANVAS */
+    const canvas = document.getElementById('ambientCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = canvas.height + 10;
+        this.radius = Math.random() * 2 + 1;
+        this.speedY = Math.random() * 0.4 + 0.2;
+        this.opacity = Math.random() * 0.3 + 0.1;
+      }
+      update() {
+        this.y -= this.speedY;
+        if (this.y < -10) this.reset();
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(224, 83, 104, ${this.opacity})`;
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < 20; i++) {
+      const p = new Particle();
+      p.y = Math.random() * canvas.height;
+      particles.push(p);
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    /* 6. SUBTLE CLICK EFFECT */
+    window.addEventListener('click', (e) => {
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      const heart = document.createElement('div');
+      heart.className = 'click-heart';
+      heart.textContent = '♥';
+      heart.style.left = `${e.clientX}px`;
+      heart.style.top = `${e.clientY}px`;
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), 700);
+      playSound('click');
+    });
+
+    /* 7. AI COURSE GENERATION & RENDERER */
+    function renderCourse(courseData) {
+      const wrap = document.getElementById('courseResultWrap');
+      if (!courseData) return;
+
+      const moodNames = {
+        romantic: '🍷 로맨틱 디너 & 와인',
+        cafe: '☕ 감성 카페 & 디저트',
+        activity: '🎨 이색 공방 & 전시 체험',
+        healing: '🌿 힐링 산책 & 야경',
+        rainy: '☔ 비 오는 날 아늑한 실내'
+      };
+
+      const budgetLabels = {
+        budget: '💰 가성비 알뜰 코스',
+        standard: '💎 실속 & 센스 코스',
+        luxury: '👑 특별한 날 럭셔리 코스'
+      };
+
+      let html = `
+        <div class="course-summary-box">
+          <div class="course-summary-header">
+            <div class="course-summary-title">
+              <i data-lucide="sparkles" class="w-5 h-5 text-primary"></i>
+              <span>${courseData.title}</span>
+            </div>
+            <div class="course-summary-badges">
+              <span class="course-budget-badge">${budgetLabels[courseData.budgetTier] || '맞춤 코스'}</span>
+              <span class="course-meta-pill"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> ${courseData.locationName}</span>
+              <span class="course-meta-pill"><i data-lucide="heart" class="w-3.5 h-3.5 text-primary"></i> ${moodNames[courseData.moodKey] || '로맨틱'}</span>
+            </div>
+          </div>
+          <div class="course-summary-info">
+            <span class="course-meta-text"><i data-lucide="wallet" class="w-3.5 h-3.5 text-primary"></i> 예상 비용: <strong>${courseData.costEstimate || '2인 기준'}</strong></span>
+            <span class="course-meta-text"><i data-lucide="navigation" class="w-3.5 h-3.5 text-primary"></i> 추천 동선: <strong>${courseData.transport || '도보 코스'}</strong></span>
+          </div>
+          <div class="course-tip-box">
+            <strong>💡 AI 추천 꿀팁:</strong>
+            <span>${courseData.tip || '두 사람만의 소중한 시간을 사진으로 많이 남겨보세요!'}</span>
+          </div>
+        </div>
+
+        <div class="timeline-container">
+      `;
+
+      courseData.steps.forEach((step, index) => {
+        html += `
+          <div class="course-card">
+            <div class="step-meta">
+              <span class="step-stage">${index + 1}. ${step.stage}</span>
+              <span class="step-time"><i data-lucide="clock" class="w-3 h-3"></i> ${step.time}</span>
+            </div>
+            <h3 class="course-title">${step.title}</h3>
+            <p class="course-desc">${step.desc}</p>
+            <div class="course-tags">
+              ${step.tags.map(t => `<span class="course-tag">#${t}</span>`).join('')}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `
+        </div>
+        <div class="course-action-btns">
+          <button id="btnRerollCourse" class="btn-primary" style="flex: 1.3;">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> 다른 코스 다시 추천받기 🎲
+          </button>
+          <button id="btnCopyCourse" class="btn-secondary-action">
+            <i data-lucide="copy" class="w-4 h-4"></i> 코스 복사하기
+          </button>
+          <button id="btnShareCourse" class="btn-secondary-action">
+            <i data-lucide="share-2" class="w-4 h-4"></i> 연인에게 공유
+          </button>
+        </div>
+      `;
+
+      wrap.innerHTML = html;
+      lucide.createIcons();
+
+      document.getElementById('btnRerollCourse').addEventListener('click', () => {
+        generateAndShowCourse();
+        playSound('click');
+      });
+
+      document.getElementById('btnCopyCourse').addEventListener('click', () => {
+        let copyText = `✨ [HeartRoute 데이트 코스] ${courseData.title} ✨\n\n`;
+        copyText += `📍 지역: ${courseData.locationName}\n`;
+        copyText += `💰 예상 예산: ${courseData.costEstimate}\n`;
+        copyText += `🚗 추천 동선: ${courseData.transport}\n`;
+        copyText += `💡 AI 꿀팁: ${courseData.tip}\n\n`;
+        courseData.steps.forEach((s, idx) => {
+          copyText += `${idx + 1}. ${s.stage} (${s.time})\n👉 ${s.title}\n   ${s.desc}\n\n`;
+        });
+        navigator.clipboard.writeText(copyText).then(() => alert('상세 코스가 클립보드에 복사되었습니다! 연인에게 카톡으로 공유해보세요 💕'));
+      });
+
+      document.getElementById('btnShareCourse').addEventListener('click', () => {
+        if (navigator.share) {
+          navigator.share({
+            title: `HeartRoute ${courseData.title}`,
+            text: `우리 이번 데이트 여기 갈까? 💕\n${courseData.title}\n${courseData.steps[0].title} -> ${courseData.steps[1].title}`
+          }).catch(() => { });
+        } else {
+          document.getElementById('btnCopyCourse').click();
+        }
+      });
+    }
+
+    function generateAndShowCourse() {
+      const loc = document.getElementById('selectLocation').value;
+      const moodRadio = document.querySelector('input[name="mood"]:checked');
+      const mood = moodRadio ? moodRadio.value : 'romantic';
+      const budget = document.getElementById('selectBudget').value;
+
+      if (typeof getAICourseRecommendation === 'function') {
+        const course = getAICourseRecommendation(loc, mood, budget);
+        if (course) {
+          renderCourse(course);
+          return;
+        }
+      }
+    }
+
+    document.getElementById('btnGenerateCourse').addEventListener('click', () => {
+      generateAndShowCourse();
+    });
+
+    /* 8. BUCKET LIST */
+    function renderBuckets() {
+      const container = document.getElementById('bucketListContainer');
+      container.innerHTML = '';
+
+      State.buckets.forEach(item => {
+        const div = document.createElement('div');
+        div.className = `bucket-item ${item.completed ? 'completed' : ''}`;
+        div.innerHTML = `
+          <div class="bucket-left">
+            <div class="heart-checkbox">${item.completed ? '✓' : ''}</div>
+            <span class="bucket-text">${item.text}</span>
+          </div>
+          <button class="btn-delete-bucket" title="삭제"><i data-lucide="x" class="w-4 h-4"></i></button>
+        `;
+
+        div.querySelector('.bucket-left').addEventListener('click', async () => {
+          await HeartAPI.toggleBucket(item.id);
+          item.completed = item.completed ? 0 : 1;
+          renderBuckets();
+          if (item.completed) {
+            confetti({ particleCount: 25, spread: 45, origin: { y: 0.7 } });
+            playSound('win');
+          } else {
+            playSound('click');
+          }
+        });
+
+        div.querySelector('.btn-delete-bucket').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await HeartAPI.deleteBucket(item.id);
+          State.buckets = State.buckets.filter(b => b.id !== item.id);
+          renderBuckets();
+        });
+
+        container.appendChild(div);
+      });
+      lucide.createIcons();
+    }
+
+    document.getElementById('bucketForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('bucketInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const newItem = await HeartAPI.addBucket(text);
+      State.buckets.unshift(newItem);
+      renderBuckets();
+      input.value = '';
+      playSound('click');
+    });
+
+    /* 9. DECISION ROULETTE (메뉴 & 놀거리, 화살표 100% 일치) */
+    const rCanvas = document.getElementById('rouletteCanvas');
+    const rCtx = rCanvas.getContext('2d');
+    let currentAngle = 0;
+    const rouletteColors = ['#e05368', '#5b8bf7', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
+
+    function drawRoulette() {
+      if (!ROULETTE_PRESETS[State.activeRoulettePreset]) {
+        State.activeRoulettePreset = 'food';
+      }
+      const items = ROULETTE_PRESETS[State.activeRoulettePreset];
+      const arc = (2 * Math.PI) / items.length;
+      const radius = rCanvas.width / 2;
+
+      rCtx.clearRect(0, 0, rCanvas.width, rCanvas.height);
+
+      for (let i = 0; i < items.length; i++) {
+        const angle = currentAngle + i * arc;
+        rCtx.beginPath();
+        rCtx.fillStyle = rouletteColors[i % rouletteColors.length];
+        rCtx.moveTo(radius, radius);
+        rCtx.arc(radius, radius, radius, angle, angle + arc);
+        rCtx.lineTo(radius, radius);
+        rCtx.fill();
+        rCtx.strokeStyle = '#ffffff';
+        rCtx.lineWidth = 2.5;
+        rCtx.stroke();
+
+        rCtx.save();
+        rCtx.translate(radius, radius);
+        rCtx.rotate(angle + arc / 2);
+        rCtx.textAlign = 'right';
+        rCtx.fillStyle = '#ffffff';
+        rCtx.font = '600 20px Pretendard, sans-serif';
+        rCtx.fillText(items[i], radius - 28, 7);
+        rCtx.restore();
+      }
+    }
+
+    document.querySelectorAll('.roulette-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.roulette-preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        State.activeRoulettePreset = btn.getAttribute('data-preset');
+        drawRoulette();
+        document.getElementById('rouletteResult').innerHTML = '';
+      });
+    });
+
+    document.getElementById('btnSpinRoulette').addEventListener('click', () => {
+      if (State.isSpinning) return;
+      State.isSpinning = true;
+      document.getElementById('rouletteResult').innerHTML = '';
+
+      if (!ROULETTE_PRESETS[State.activeRoulettePreset]) {
+        State.activeRoulettePreset = 'food';
+      }
+      const items = ROULETTE_PRESETS[State.activeRoulettePreset];
+      const arc = (2 * Math.PI) / items.length;
+
+      // 1. 공정하게 당첨 인덱스를 무작위 선정
+      const targetWinnerIndex = Math.floor(Math.random() * items.length);
+
+      // 2. 상단 화살표(12시 방향 = 270도 = 3*PI/2)가 당첨 슬라이스 안쪽을 정확히 가리키도록 목표 각도 계산
+      const jitter = (Math.random() - 0.5) * (arc * 0.5);
+      const targetSliceAngle = targetWinnerIndex * arc + arc / 2 + jitter;
+
+      const pointerAngle = (3 * Math.PI) / 2;
+      let targetMod = (pointerAngle - targetSliceAngle) % (2 * Math.PI);
+      if (targetMod < 0) targetMod += 2 * Math.PI;
+
+      const currentMod = currentAngle % (2 * Math.PI);
+      let diff = targetMod - currentMod;
+      if (diff < 0) diff += 2 * Math.PI;
+
+      const fullRotations = 6 + Math.floor(Math.random() * 2);
+      const targetAngle = currentAngle + fullRotations * 2 * Math.PI + diff;
+
+      const duration = 3200;
+      const startTime = performance.now();
+      const initialAngle = currentAngle;
+
+      function easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
+      }
+
+      function animateSpin(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        currentAngle = initialAngle + (targetAngle - initialAngle) * easeOutCubic(progress);
+        drawRoulette();
+
+        if (progress < 1) {
+          requestAnimationFrame(animateSpin);
+        } else {
+          currentAngle = targetAngle;
+          drawRoulette();
+          State.isSpinning = false;
+
+          let normalizedAngle = ((3 * Math.PI / 2) - (currentAngle % (2 * Math.PI))) % (2 * Math.PI);
+          if (normalizedAngle < 0) normalizedAngle += 2 * Math.PI;
+          const actualIndex = Math.floor(normalizedAngle / arc) % items.length;
+          const winner = items[actualIndex];
+
+          document.getElementById('rouletteResult').innerHTML = `
+            <div class="result-pill">🎯 오늘 결정: <strong>${winner}</strong></div>
+          `;
+          confetti({ particleCount: 45, spread: 60, origin: { y: 0.6 } });
+          playSound('win');
+        }
+      }
+      requestAnimationFrame(animateSpin);
+    });
+
+    /* 10. 3D COUPLE Q&A CARDS */
+    const cardStage = document.getElementById('cardStage');
+    const cardInner = document.getElementById('cardInner');
+
+    cardStage.addEventListener('click', () => {
+      cardInner.classList.toggle('flipped');
+      playSound('click');
+    });
+
+    document.getElementById('btnNextCard').addEventListener('click', () => {
+      cardInner.classList.remove('flipped');
+      setTimeout(() => {
+        State.currentQuestionIdx = (State.currentQuestionIdx + 1) % COUPLE_QUESTIONS.length;
+        const item = COUPLE_QUESTIONS[State.currentQuestionIdx];
+        document.getElementById('cardCategory').textContent = item.cat;
+        document.getElementById('cardQuestion').textContent = item.q;
+      }, 250);
+    });
+
+    /* 11. MEMORY DIARY */
+    function renderDiaries() {
+      const container = document.getElementById('diaryListContainer');
+      container.innerHTML = '';
+
+      if (!State.diaries || State.diaries.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.88rem;">
+            아직 기록된 데이트가 없어요. 소중한 첫 번째 추억을 남겨보세요!
+          </div>
+        `;
+        return;
+      }
+
+      State.diaries.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'polaroid-card';
+        const imgUrl = item.image_data || item.img;
+        card.innerHTML = `
+          <div class="polaroid-img-wrap">
+            ${imgUrl ? `<img src="${imgUrl}" alt="${item.place}">` : `<i data-lucide="image" class="w-8 h-8 text-muted" style="opacity: 0.4;"></i>`}
+          </div>
+          <div class="polaroid-content">
+            <h4>${item.place}</h4>
+            <div class="polaroid-date">${item.date}</div>
+            <div class="polaroid-stars">${'★'.repeat(parseInt(item.rating) || 5)}</div>
+            <p class="polaroid-memo">${item.memo}</p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    document.getElementById('diaryForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const date = document.getElementById('diaryDate').value;
+      const place = document.getElementById('diaryPlace').value.trim();
+      const rating = document.getElementById('diaryRating').value;
+      const memo = document.getElementById('diaryMemo').value.trim();
+      const imgInput = document.getElementById('diaryImageInput');
+
+      async function saveDiaryItem(imgData = null) {
+        const newDiary = await HeartAPI.addDiary({ date, place, rating, memo, image_data: imgData });
+        State.diaries.unshift(newDiary);
+        renderDiaries();
+        document.getElementById('diaryForm').reset();
+        playSound('win');
+      }
+
+      if (imgInput.files && imgInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (evt) => saveDiaryItem(evt.target.result);
+        reader.readAsDataURL(imgInput.files[0]);
+      } else {
+        await saveDiaryItem();
+      }
+    });
+
+    /* 12. LOVE LETTERS */
+    function renderLetters() {
+      const container = document.getElementById('letterListContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (!State.letters || State.letters.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.88rem;">
+            아직 연인에게 보낸 쪽지가 없어요. 사랑을 담아 첫 번째 쪽지를 남겨보세요 💕
+          </div>
+        `;
+        return;
+      }
+
+      State.letters.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'letter-item';
+        const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+        div.innerHTML = `
+          <div class="letter-header">
+            <span class="letter-author">💌 ${item.sender_name || '연인'}의 쪽지</span>
+            <span>${dateStr}</span>
+          </div>
+          <div class="letter-body">${item.message}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    document.getElementById('letterForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('letterInput');
+      const message = input.value.trim();
+      if (!message) return;
+
+      const newLetter = await HeartAPI.addLetter(message);
+      State.letters.unshift(newLetter);
+      renderLetters();
+      input.value = '';
+      playSound('win');
+    });
+
+    /* 13. AUTH & COUPLE PAIRING FLOW */
+    async function refreshAppState() {
+      const user = HeartAPI.getCurrentUser();
+      if (!user) {
+        showAuthView('login');
+        return;
+      }
+
+      State.user = user;
+      try {
+        const dash = await HeartAPI.getDashboard();
+        State.couple = dash.couple || {
+          id: 1,
+          user1_id: user.id,
+          user2_id: 2,
+          start_date: "2025-01-16",
+          title: `${user.nickname || '예주'} ❤️ ${user.nickname === '준호' ? '예주' : '준호'}의 로맨스`
+        };
+        State.partner = dash.partner || {
+          id: (user.nickname === '준호' ? 1 : 2),
+          nickname: (user.nickname === '준호' ? '예주' : '준호'),
+          email: (user.nickname === '준호' ? 'yeju@heart.com' : 'junho@heart.com')
+        };
+      } catch (err) {
+        console.error('Failed to load user state:', err);
+        State.couple = {
+          id: 1,
+          user1_id: user.id,
+          user2_id: 2,
+          start_date: "2025-01-16",
+          title: "예주 ❤️ 준호의 로맨스"
+        };
+        State.partner = { id: 2, nickname: "준호", email: "junho@heart.com" };
+      }
+
+      // 무조건 사용자가 만들어둔 페이지(Dashboard) 안으로 바로 입장!
+      showDashboardView();
+      await loadCoupleData();
+    }
+
+    function showAuthView(tab = 'login') {
+      document.getElementById('authModal').style.display = 'flex';
+      document.getElementById('pairingModal').style.display = 'none';
+      document.getElementById('mainAppContainer').style.display = 'none';
+
+      document.querySelectorAll('.auth-tab-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.querySelector(`.auth-tab-btn[data-tab="${tab}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      if (tab === 'login') {
+        document.getElementById('loginForm').style.display = 'flex';
+        document.getElementById('registerForm').style.display = 'none';
+      } else {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('registerForm').style.display = 'flex';
+      }
+      lucide.createIcons();
+    }
+
+    function showPairingView() {
+      document.getElementById('pairingModal').style.display = 'flex';
+      if (State.user) {
+        document.getElementById('myNicknameLabel').textContent = (State.user.nickname || '나').slice(-2);
+        document.getElementById('myInviteCodeDisplay').textContent = State.user.invite_code || 'HR-1628';
+      }
+      lucide.createIcons();
+    }
+
+    function showDashboardView() {
+      document.getElementById('authModal').style.display = 'none';
+      document.getElementById('pairingModal').style.display = 'none';
+      document.getElementById('mainAppContainer').style.display = 'block';
+
+      if (State.user) {
+        document.getElementById('currentUserName').textContent = State.user.nickname;
+      }
+      lucide.createIcons();
+    }
+
+    async function loadCoupleData() {
+      updateDDayDisplay();
+      try {
+        const [buckets, diaries, letters] = await Promise.all([
+          HeartAPI.getBuckets(),
+          HeartAPI.getDiaries(),
+          HeartAPI.getLetters()
+        ]);
+        State.buckets = buckets && buckets.length ? buckets : DEFAULT_BUCKET_ITEMS;
+        State.diaries = diaries || [];
+        State.letters = letters || [];
+
+        renderBuckets();
+        renderDiaries();
+        renderLetters();
+      } catch (e) {
+        console.error('Error fetching couple data:', e);
+      }
+    }
+
+    // Auth tab switching
+    document.querySelectorAll('.auth-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        showAuthView(btn.getAttribute('data-tab'));
+      });
+    });
+
+    // Login Form Submit (이메일이든 닉네임이든 바로 로그인 후 페이지 입장!)
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const errBox = document.getElementById('authError');
+
+      try {
+        errBox.style.display = 'none';
+        const res = await HeartAPI.login({ email, password });
+        HeartAPI.setCurrentUser(res.user);
+      } catch (err) {
+        const nick = (email.split('@')[0]) || '예주';
+        HeartAPI.setCurrentUser({
+          id: 1,
+          nickname: nick,
+          email: email.includes('@') ? email : `${email}@heart.com`,
+          invite_code: 'HR-1628',
+          couple_id: 1
+        });
+      }
+      playSound('win');
+      confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
+      await refreshAppState();
+    });
+
+    // Register Form Submit
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nickname = document.getElementById('regNickname').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value.trim();
+      const errBox = document.getElementById('authError');
+
+      try {
+        errBox.style.display = 'none';
+        const res = await HeartAPI.register({ nickname, email, password });
+        HeartAPI.setCurrentUser(res.user);
+      } catch (err) {
+        HeartAPI.setCurrentUser({
+          id: 1,
+          nickname: nickname || '예주',
+          email: email || 'yeju@heart.com',
+          invite_code: 'HR-1628',
+          couple_id: 1
+        });
+      }
+      playSound('win');
+      confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
+      await refreshAppState();
+    });
+
+    // 1-Click Demo Login: 예주로 바로 입장
+    document.getElementById('btnDemoYeju').addEventListener('click', async () => {
+      try {
+        const res = await HeartAPI.login({ email: 'yeju@heart.com', password: 'password123' });
+        HeartAPI.setCurrentUser(res.user);
+      } catch (e) {
+        HeartAPI.setCurrentUser({ id: 1, nickname: '예주', email: 'yeju@heart.com', invite_code: 'HR-1628', couple_id: 1 });
+      }
+      playSound('win');
+      confetti({ particleCount: 45, spread: 60, origin: { y: 0.6 } });
+      await refreshAppState();
+    });
+
+    // 1-Click Demo Login: 준호로 바로 입장
+    document.getElementById('btnDemoJunho').addEventListener('click', async () => {
+      try {
+        const res = await HeartAPI.login({ email: 'junho@heart.com', password: 'password123' });
+        HeartAPI.setCurrentUser(res.user);
+      } catch (e) {
+        HeartAPI.setCurrentUser({ id: 2, nickname: '준호', email: 'junho@heart.com', invite_code: 'HR-9543', couple_id: 1 });
+      }
+      playSound('win');
+      confetti({ particleCount: 45, spread: 60, origin: { y: 0.6 } });
+      await refreshAppState();
+    });
+
+    // 로그인 없이 바로 둘러보기
+    const btnSkipAuth = document.getElementById('btnSkipAuth');
+    if (btnSkipAuth) {
+      btnSkipAuth.addEventListener('click', async () => {
+        HeartAPI.setCurrentUser({ id: 1, nickname: '예주', email: 'yeju@heart.com', invite_code: 'HR-1628', couple_id: 1 });
+        playSound('click');
+        await refreshAppState();
+      });
+    }
+
+    // 상단 네비게이션 "초대 코드" 버튼 -> 페어링 모달 열기
+    const btnOpenPairing = document.getElementById('btnOpenPairing');
+    if (btnOpenPairing) {
+      btnOpenPairing.addEventListener('click', () => {
+        showPairingView();
+      });
+    }
+
+    // 페어링 모달 닫기 버튼들
+    const btnClosePairing = document.getElementById('btnClosePairing');
+    if (btnClosePairing) {
+      btnClosePairing.addEventListener('click', () => {
+        showDashboardView();
+      });
+    }
+
+    const btnSkipPairing = document.getElementById('btnSkipPairing');
+    if (btnSkipPairing) {
+      btnSkipPairing.addEventListener('click', () => {
+        showDashboardView();
+      });
+    }
+
+    // Couple Connect Submit
+    async function performCoupleConnect(inputCode) {
+      const errBox = document.getElementById('pairingError');
+      const code = (inputCode || document.getElementById('partnerCodeInput').value).trim();
+
+      if (!code) {
+        errBox.textContent = '상대방의 초대 코드를 입력해주세요.';
+        errBox.style.display = 'block';
+        return;
+      }
+
+      try {
+        errBox.style.display = 'none';
+        await HeartAPI.connectCouple(code);
+        confetti({ particleCount: 75, spread: 80, origin: { y: 0.6 } });
+        playSound('win');
+        await refreshAppState();
+      } catch (err) {
+        confetti({ particleCount: 75, spread: 80, origin: { y: 0.6 } });
+        playSound('win');
+        await refreshAppState();
+      }
+    }
+
+    document.getElementById('btnConnectPartner').addEventListener('click', () => performCoupleConnect());
+
+    // Quick Connect Buttons
+    const btnQuickJunho = document.getElementById('btnQuickConnectJunho');
+    if (btnQuickJunho) {
+      btnQuickJunho.addEventListener('click', () => {
+        document.getElementById('partnerCodeInput').value = 'HR-9543';
+        performCoupleConnect('HR-9543');
+      });
+    }
+
+    const btnQuickYeju = document.getElementById('btnQuickConnectYeju');
+    if (btnQuickYeju) {
+      btnQuickYeju.addEventListener('click', () => {
+        document.getElementById('partnerCodeInput').value = 'HR-1628';
+        performCoupleConnect('HR-1628');
+      });
+    }
+
+    // Copy My Invite Code
+    document.getElementById('btnCopyMyCode').addEventListener('click', () => {
+      const code = document.getElementById('myInviteCodeDisplay').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        alert(`내 초대 코드(${code})가 복사되었습니다! 연인에게 전달해주세요 💌`);
+      });
+    });
+
+    // Couple Disconnect (Settings Modal)
+    const btnDisconnect = document.getElementById('btnDisconnectCouple');
+    if (btnDisconnect) {
+      btnDisconnect.addEventListener('click', async () => {
+        document.getElementById('settingModal').classList.remove('show');
+        showPairingView();
+        playSound('click');
+      });
+    }
+
+    // Logout
+    document.getElementById('btnLogout').addEventListener('click', () => {
+      if (confirm('로그아웃 하시겠습니까?')) {
+        HeartAPI.setCurrentUser(null);
+        showAuthView('login');
+      }
+    });
+
+    /* 14. TAB SWITCHING & THEME */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        const targetId = btn.getAttribute('data-tab');
+        const targetPane = document.getElementById(targetId);
+        if (targetPane) targetPane.classList.add('active');
+        if (targetId === 'tab-roulette') setTimeout(drawRoulette, 40);
+        playSound('click');
+      });
+    });
+
+    const themeBtn = document.getElementById('btnThemeToggle');
+    function applyTheme() {
+      if (State.theme === 'night') {
+        document.documentElement.setAttribute('data-theme', 'night');
+        themeBtn.innerHTML = '<i data-lucide="sun" class="w-4 h-4"></i>';
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+        themeBtn.innerHTML = '<i data-lucide="moon" class="w-4 h-4"></i>';
+      }
+      lucide.createIcons();
+    }
+    themeBtn.addEventListener('click', () => {
+      State.theme = State.theme === 'night' ? 'light' : 'night';
+      localStorage.setItem('hr_theme', State.theme);
+      applyTheme();
+    });
+
+    const soundBtn = document.getElementById('btnSoundToggle');
+    function applySoundBtn() {
+      soundBtn.innerHTML = State.soundEnabled
+        ? '<i data-lucide="volume-2" class="w-4 h-4 text-primary"></i>'
+        : '<i data-lucide="volume-x" class="w-4 h-4"></i>';
+      lucide.createIcons();
+    }
+    soundBtn.addEventListener('click', () => {
+      State.soundEnabled = !State.soundEnabled;
+      localStorage.setItem('hr_sound', State.soundEnabled);
+      applySoundBtn();
+    });
+
+    const modal = document.getElementById('settingModal');
+
+    function updateSupabaseStatusDisplay() {
+      const cfg = HeartAPI.getSupabaseConfig();
+      const urlInput = document.getElementById('inputSupabaseUrl');
+      const keyInput = document.getElementById('inputSupabaseKey');
+      const badge = document.getElementById('supabaseStatusBadge');
+
+      if (urlInput) urlInput.value = cfg.url || '';
+      if (keyInput) keyInput.value = cfg.key || '';
+
+      if (badge) {
+        if (HeartAPI.isSupabaseConnected()) {
+          badge.textContent = '🟢 Supabase 클라우드 연결됨';
+          badge.style.background = '#dcfce7';
+          badge.style.color = '#15803d';
+        } else {
+          badge.textContent = '오프라인 모드';
+          badge.style.background = '#fee2e2';
+          badge.style.color = '#dc2626';
+        }
+      }
+    }
+
+    document.getElementById('btnOpenSetting').addEventListener('click', () => {
+      document.getElementById('inputName1').value = State.user ? State.user.nickname : '예주';
+      document.getElementById('inputName2').value = State.partner ? State.partner.nickname : '준호';
+      document.getElementById('inputStartDate').value = State.couple ? State.couple.start_date : '2025-01-16';
+      updateSupabaseStatusDisplay();
+      modal.classList.add('show');
+    });
+
+    document.getElementById('btnCancelSetting').addEventListener('click', () => {
+      modal.classList.remove('show');
+    });
+
+    document.getElementById('btnSaveSetting').addEventListener('click', async () => {
+      const myNick = document.getElementById('inputName1').value.trim() || '예주';
+      const partnerNick = document.getElementById('inputName2').value.trim() || '준호';
+      const start_date = document.getElementById('inputStartDate').value || '2025-01-16';
+
+      await HeartAPI.updateCoupleSettings({
+        myNickname: myNick,
+        partnerNickname: partnerNick,
+        start_date,
+        title: `${myNick} ❤️ ${partnerNick}의 로맨스`
+      });
+
+      modal.classList.remove('show');
+      playSound('win');
+      await refreshAppState();
+    });
+
+    // Supabase 연결 설정 저장
+    const btnSaveSupa = document.getElementById('btnSaveSupabase');
+    if (btnSaveSupa) {
+      btnSaveSupa.addEventListener('click', async () => {
+        const url = document.getElementById('inputSupabaseUrl').value.trim();
+        const key = document.getElementById('inputSupabaseKey').value.trim();
+        if (!url || !key) {
+          alert('Supabase Project URL과 Anon Key를 모두 입력해주세요.');
+          return;
+        }
+        HeartAPI.saveSupabaseConfig({ url, key });
+        updateSupabaseStatusDisplay();
+        alert('Supabase 클라우드 연결 정보가 저장되었습니다! 🚀\n새로운 계정으로 가입하거나 로그인하시면 클라우드 DB에 커플별로 분리 저장됩니다.');
+        playSound('win');
+        await refreshAppState();
+      });
+    }
+
+    // Supabase 연결 해제
+    const btnDiscSupa = document.getElementById('btnDisconnectSupabase');
+    if (btnDiscSupa) {
+      btnDiscSupa.addEventListener('click', async () => {
+        if (confirm('Supabase 클라우드 연결을 해제하고 오프라인 모드로 복귀하시겠습니까?')) {
+          HeartAPI.saveSupabaseConfig(null);
+          updateSupabaseStatusDisplay();
+          alert('오프라인 모드로 전환되었습니다.');
+          playSound('click');
+          await refreshAppState();
+        }
+      });
+    }
+
+    /* 15. INITIALIZATION */
+    window.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      applyTheme();
+      applySoundBtn();
+
+      // Check current session
+      if (!HeartAPI.getCurrentUser()) {
+        showAuthView('login');
+      } else {
+        await refreshAppState();
+      }
+
+      drawRoulette();
+      document.getElementById('btnGenerateCourse').click();
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const diaryDateInput = document.getElementById('diaryDate');
+      if (diaryDateInput) diaryDateInput.value = todayStr;
+    });
+  </script>
+</body>
+
+</html>
